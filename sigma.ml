@@ -151,9 +151,6 @@ let rec mgu: term -> term -> substitution =
         | [], _
         | _, [] -> raise Not_well_formed
         | x::xs, y::ys ->
-            let m = mgu x y in
-            let xs' = List.map (subst m) xs in
-            let ys' = List.map (subst m) ys in
-            let acc' = compose acc m in
-            aux acc' xs' ys'
+            let m = mgu (subst acc x) (subst acc y) in
+            aux (compose acc m) xs ys
         in aux IntMap.empty xl yl
