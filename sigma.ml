@@ -57,9 +57,9 @@ let rec wfterm: signature -> term -> bool =
  *)
 let rec ht: term -> int =
     function
-    | Var _ -> 1
+    | Var _ -> 0
     | Node (_, l) ->
-        List.map ht l |> List.fold_left max 0 |> ( + ) 1
+        List.map ht l |> List.fold_left max (-1) |> ( + ) 1
 
 (*
  * computes size of the term
