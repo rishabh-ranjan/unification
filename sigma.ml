@@ -172,7 +172,7 @@ let rec get_left n =
 
 let rec get_right n =
     if n = 0 then Node (0, [])
-    else Node (1, [get_right (n-1); Var n])
+    else Node (1, [Var n; get_right (n-1)])
 
 let time f x y =
     let t = Sys.time() in
