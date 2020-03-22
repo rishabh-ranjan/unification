@@ -154,3 +154,42 @@ let rec mgu: term -> term -> substitution =
             let m = mgu (subst acc x) (subst acc y) in
             aux (compose acc m) xs ys
         in aux IntMap.empty xl yl
+
+(* testing *)
+
+(*
+ * get_left and get_right return terms which according to
+ * Wikipedia give worst-case for naive Robinson's algo.
+ * the mgu for these have exponential size, however
+ * since most of the terms are simply pointers to others
+ * in ocaml's handling, this does not imply exponential
+ * time complexity.
+ *)
+
+let rec get_left n =
+    if n = 0 then Node (0, [])
+    else Node (1, [get_left (n-1); Var n])
+
+let rec get_right n =
+    if n = 0 then Node (0, [])
+    else Node (1, [get_right (n-1); Var n])
+
+let time f x y =
+    let t = Sys.time() in
+    let fxy = f x y in
+    Printf.printf "Execution time: %fs\n" (Sys.time() -. t);
+    fxy
+
+(*
+ * empirical testing suggests that mgu for these terms
+ * runs in O(n^2) time (ignoring possible log terms)
+ *)
+let test n =
+    let l = get_left n in
+    let r = get_right n in
+    let m = time mgu l r in
+    let lm = subst m l in
+    let rm = subst m r in
+    Printf.printf "Correctness: %s\n"
+        (if lm = rm then "true" else "false")
+
