@@ -91,6 +91,9 @@ type substitution = term IntMap.t
 
 (*
  * applies a substitution to a term and returns the result term
+ * possible optimization: don't traverse tree for empty s
+ * however, this will cause significant difference in only
+ * very special few cases, so it has been ignored
  *)
 let rec subst: substitution -> term -> term =
     fun s -> function
@@ -158,7 +161,7 @@ let rec mgu: term -> term -> substitution =
 (* testing *)
 
 (*
- * get_left and get_right return terms which according to
+ * get_left_1 and get_right_1 return terms which according to
  * Wikipedia give worst-case for naive Robinson's algo.
  * the mgu for these have exponential size, however
  * since most of the terms are simply pointers to others
@@ -166,13 +169,29 @@ let rec mgu: term -> term -> substitution =
  * time complexity.
  *)
 
-let rec get_left n =
+let rec get_left_1 n =
     if n = 0 then Node (0, [])
-    else Node (1, [get_left (n-1); Var n])
+    else Node (1, [get_left_1 (n-1); Var n])
 
-let rec get_right n =
+let rec get_right_1 n =
     if n = 0 then Node (0, [])
-    else Node (1, [Var n; get_right (n-1)])
+    else Node (1, [Var n; get_right_1 (n-1)])
+
+(*
+ * get_left_2 and get_right_2 are tailored to give exponential
+ * time for my implementation.
+ *)
+let get_left_2 n =
+    let rec aux acc n =
+        if n = 0 then acc
+        else aux ((Var (n-1))::acc) (n-1)
+    in Node (0, aux [] n)
+
+let get_right_2 n =
+    let rec aux acc n =
+        if n = 0 then (Node (1, []))::acc
+        else aux ((Node (2, [Var (n-1); Var (n-1)]))::acc) (n-1)
+    in Node (0, aux [] (n-1))
 
 let time f x y =
     let t = Sys.time() in
@@ -183,13 +202,19 @@ let time f x y =
 (*
  * empirical testing suggests that mgu for these terms
  * runs in O(n^2) time (ignoring possible log terms)
+ * this has been verified theoretically
  *)
-let test n =
-    let l = get_left n in
-    let r = get_right n in
-    let m = time mgu l r in
-    let lm = subst m l in
-    let rm = subst m r in
-    Printf.printf "Correctness: %s\n"
-        (if lm = rm then "true" else "false")
+let test_1 n =
+    let l = get_left_1 n in
+    let r = get_right_1 n in
+    time mgu l r
 
+(*
+ * as expected theoretically, this is exponential in n.
+ * this proves that the worst case complexity of this
+ * implementation is at least exponential.
+ *)
+let test_2 n =
+    let l = get_left_2 n in
+    let r = get_right_2 n in
+    time mgu l r
